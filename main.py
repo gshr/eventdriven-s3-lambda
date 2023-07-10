@@ -53,16 +53,9 @@ def handler(event,context):
         insert_metadata(item)
         queue =SQSQueue()
         queue.send_message(item)
-        print('-----'*10)
+        
+        
 
         
         
         
-        
-if __name__ == '__main__':
-    
-    print("--"*100)
-    handler("","")
-    
-    
-    
