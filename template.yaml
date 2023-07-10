@@ -1,0 +1,46 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Run lambda on event on s3 insert metadata to dynamodb
+
+Resources:
+  MyS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: event-bucket-process
+
+  MyDatabaseTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName : eventnumber
+          AttributeType : S
+      KeySchema:
+        - AttributeName: eventnumber
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+      TableName: s3_upload_records
+
+  MyLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: MyLambdaFunction
+      Runtime: python3.10
+      Handler: main.handler
+      CodeUri: .
+      Policies:
+        - DynamoDBWritePolicy:
+             TableName: !Ref MyDatabaseTable
+      Environment:
+          Variables:
+            TABLE_NAME: !Ref MyDatabaseTable
+      Events:
+        S3Event:
+          Type: S3
+          Properties:
+            Bucket: !Ref MyS3Bucket
+            Events: 
+              - s3:ObjectCreated:*
+              - s3:ObjectRemoved:*
+
+
+      
