@@ -1,17 +1,29 @@
 
-import json
-import boto3
-import os
+import boto3, os, json
 from uuid import uuid4
 from customexception import ENVException,DynamoOperationFailed
 
-
 try:
     TABLE_NAME = os.environ['TABLE_NAME']
+    QUEUE_URL = os.environ['QUEUE_URL']
 except Exception as e:
     raise ENVException(f"Environment variable is not set: {str(e)}")
     
 
+class SQSQueue:
+    
+    def __init__(self):
+      self.sqs_client =  boto3.client('sqs')
+        
+    
+    def send_message(self, item):
+        response = self.sqs_client.send_message(
+            QueueUrl=QUEUE_URL,
+            MessageBody=json.dumps(item)
+        )
+        print(response)
+        return response
+        
 
 def insert_metadata(item):
     """
@@ -26,6 +38,7 @@ def insert_metadata(item):
     
     
 def handler(event,context):
+    
     data = event['Records']
     for i in data:
         bucketinfo=i['s3']['bucket']
@@ -38,10 +51,16 @@ def handler(event,context):
         "objectName":objectinfo['key'],       
         }
         insert_metadata(item)
+        queue =SQSQueue()
+        queue.send_message(item)
+        print('-----'*10)
+
+        
         
         
         
 if __name__ == '__main__':
+    
     print("--"*100)
     handler("","")
     

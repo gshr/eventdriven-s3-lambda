@@ -3,6 +3,10 @@ Transform: AWS::Serverless-2016-10-31
 Description: Run lambda on event on s3 insert metadata to dynamodb
 
 Resources:
+
+  MySQSQueue:
+    Type : AWS::SQS::Queue
+      
   MyS3Bucket:
     Type: AWS::S3::Bucket
     Properties:
@@ -18,7 +22,7 @@ Resources:
         - AttributeName: eventnumber
           KeyType: HASH
       BillingMode: PAY_PER_REQUEST
-      TableName: s3_upload_records
+      TableName: s3_metadata
 
   MyLambdaFunction:
     Type: AWS::Serverless::Function
@@ -29,10 +33,16 @@ Resources:
       CodeUri: .
       Policies:
         - DynamoDBWritePolicy:
-             TableName: !Ref MyDatabaseTable
+            TableName: !Ref MyDatabaseTable
+
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt MySQSQueue.QueueName
+
+
       Environment:
           Variables:
             TABLE_NAME: !Ref MyDatabaseTable
+            QUEUE_URL: !Ref MySQSQueue
       Events:
         S3Event:
           Type: S3
@@ -41,6 +51,8 @@ Resources:
             Events: 
               - s3:ObjectCreated:*
               - s3:ObjectRemoved:*
+
+  
 
 
       
